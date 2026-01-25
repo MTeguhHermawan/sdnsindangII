@@ -2,134 +2,39 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<title>Nilai Siswa</title>
+<title>Akses Data Siswa</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
 <style>
-body {
-  font-family: Arial, sans-serif;
-  background:#f4f6f8;
-  margin:0;
-}
-header {
-  background:#1e88e5;
-  color:white;
-  padding:20px;
-  text-align:center;
-}
-.container {
-  padding:20px;
-  max-width:420px;
-  margin:auto;
-}
-input, select, button {
-  width:100%;
-  padding:12px;
-  margin-top:10px;
-  border-radius:8px;
-  border:1px solid #ccc;
-  font-size:15px;
-}
-button {
-  background:#1e88e5;
-  color:white;
-  border:none;
-  font-weight:bold;
-}
-.card {
+body { font-family: Arial; background:#f4f6f8; margin:0 }
+header { background:#1e88e5; color:white; padding:20px; text-align:center }
+.container { padding:20px; max-width:400px; margin:auto }
+.menu a {
+  display:block;
   background:white;
-  padding:15px;
-  margin-top:12px;
+  padding:18px;
+  margin-top:15px;
+  text-align:center;
   border-radius:10px;
-  box-shadow:0 2px 5px rgba(0,0,0,0.1);
+  text-decoration:none;
+  color:#333;
+  font-weight:bold;
+  box-shadow:0 2px 5px rgba(0,0,0,.1);
 }
+.menu a:hover { background:#e3f2fd }
 </style>
 </head>
 
 <body>
-
 <header>
-  <h2>📊 Cek Nilai Siswa</h2>
+  <h2>🔐 Akses Data Siswa</h2>
   <a href="index.html" style="color:white">← Kembali</a>
 </header>
 
 <div class="container">
-  <input id="kode" placeholder="Masukkan Kode Orang Tua">
-
-  <!-- PILIHAN MAPEL -->
-  <select id="mapel">
-    <option value="">-- Pilih Mata Pelajaran --</option>
-    <option>Matematika</option>
-    <option>Bahasa Indonesia</option>
-    <option>IPAS</option>
-    <option>PPKn</option>
-    <option>Bahasa Sunda</option>
-    <option>Bahasa Inggris</option>
-    <option>SBDP</option>
-  </select>
-
-  <button onclick="cek()">Tampilkan Nilai</button>
-  <div id="hasil"></div>
+  <div class="menu">
+    <a href="kehadiran.html">📅 Cek Kehadiran</a>
+    <a href="nilai.html">📊 Cek Nilai</a>
+  </div>
 </div>
-
-<script>
-function normalMapel(text) {
-  return text
-    .toLowerCase()
-    .replace(/\s*\(.*?\)\s*/g, "")
-    .trim();
-}
-
-async function cek() {
-  const kodeInput = document.getElementById("kode").value.trim();
-  const mapelInput = document.getElementById("mapel").value;
-  const hasil = document.getElementById("hasil");
-
-  if (!kodeInput || !mapelInput) {
-    hasil.innerHTML = "<p>⚠️ Kode dan mata pelajaran harus dipilih</p>";
-    return;
-  }
-
-  try {
-    const res = await fetch("data/nilai.csv");
-    const text = await res.text();
-    const rows = text.trim().split("\n").slice(1);
-
-    let output = "";
-
-    rows.forEach(row => {
-      const cols = row.split(";");
-
-      if (cols.length >= 5) {
-        const kode = cols[0].trim();
-        const nama = cols[1].trim();
-        const mapelCSV = cols[2].trim();
-        const tanggal = cols[3].trim();
-        const nilai = cols[4].trim();
-
-        if (
-          kode === kodeInput &&
-          normalMapel(mapelCSV) === normalMapel(mapelInput)
-        ) {
-          output += `
-            <div class="card">
-              <b>${mapelCSV}</b><br>
-              Nama: ${nama}<br>
-              Tanggal: ${tanggal}<br>
-              Nilai: <b>${nilai}</b>
-            </div>
-          `;
-        }
-      }
-    });
-
-    hasil.innerHTML = output || "<p>❌ Data tidak ditemukan</p>";
-
-  } catch (e) {
-    hasil.innerHTML = "<p>❌ Gagal membaca data</p>";
-    console.error(e);
-  }
-}
-</script>
 </body>
 </html>
