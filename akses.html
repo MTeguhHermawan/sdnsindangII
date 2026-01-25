@@ -2,103 +2,46 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<title>Kehadiran & Nilai</title>
+<title>Nilai Siswa</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-:root {
-  --primary:#1e88e5;
-  --bg:#f4f6f8;
-  --card:#ffffff;
-}
-
-* { box-sizing:border-box }
-
 body {
+  font-family: Arial, sans-serif;
+  background:#f4f6f8;
   margin:0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
-  background:var(--bg);
-  color:#333;
 }
-
-/* HEADER */
 header {
-  background:var(--primary);
+  background:#1e88e5;
   color:white;
-  padding:18px;
+  padding:20px;
   text-align:center;
 }
-
-header h2 {
-  margin:0;
-  font-size:20px;
-}
-
-header a {
-  display:block;
-  margin-top:8px;
-  color:#e3f2fd;
-  text-decoration:none;
-  font-size:14px;
-}
-
-/* CONTAINER */
 .container {
-  padding:16px;
+  padding:20px;
   max-width:420px;
   margin:auto;
 }
-
-/* INPUT */
-input {
+input, select, button {
   width:100%;
-  padding:14px;
-  font-size:16px;
-  border-radius:10px;
+  padding:12px;
+  margin-top:10px;
+  border-radius:8px;
   border:1px solid #ccc;
-  margin-bottom:12px;
+  font-size:15px;
 }
-
-/* BUTTON */
 button {
-  width:100%;
-  padding:14px;
-  font-size:16px;
-  border:none;
-  border-radius:10px;
-  background:var(--primary);
+  background:#1e88e5;
   color:white;
-  font-weight:600;
-  cursor:pointer;
+  border:none;
+  font-weight:bold;
 }
-
-button:active {
-  transform:scale(0.98);
-}
-
-/* CARD NILAI */
 .card {
-  background:var(--card);
-  margin-top:14px;
-  padding:14px;
-  border-radius:12px;
-  box-shadow:0 2px 6px rgba(0,0,0,0.1);
-}
-
-.card b {
-  font-size:16px;
-  color:#0d47a1;
-}
-
-.card small {
-  color:#666;
-}
-
-/* PESAN */
-#hasil p {
-  text-align:center;
-  margin-top:16px;
-  color:#777;
+  background:white;
+  padding:15px;
+  margin-top:12px;
+  border-radius:10px;
+  box-shadow:0 2px 5px rgba(0,0,0,0.1);
 }
 </style>
 </head>
@@ -107,20 +50,38 @@ button:active {
 
 <header>
   <h2>📊 Cek Nilai Siswa</h2>
-  <a href="index.html">← Kembali ke Menu</a>
+  <a href="index.html" style="color:white">← Kembali</a>
 </header>
 
 <div class="container">
   <input id="kode" placeholder="Masukkan Kode Orang Tua">
-  <button onclick="cek()">Lihat Nilai</button>
+
+  <!-- PILIHAN MAPEL -->
+  <select id="mapel">
+    <option value="">-- Pilih Mata Pelajaran --</option>
+    <option>Matematika</option>
+    <option>Bahasa Indonesia</option>
+    <option>IPAS</option>
+    <option>PPKn</option>
+    <option>Bahasa Sunda</option>
+    <option>Bahasa Inggris</option>
+    <option>SBDP</option>
+  </select>
+
+  <button onclick="cek()">Tampilkan Nilai</button>
   <div id="hasil"></div>
 </div>
 
 <script>
 async function cek() {
   const kodeInput = document.getElementById("kode").value.trim();
+  const mapelInput = document.getElementById("mapel").value;
   const hasil = document.getElementById("hasil");
-  hasil.innerHTML = "<p>Memuat data...</p>";
+
+  if (!kodeInput || !mapelInput) {
+    hasil.innerHTML = "<p>⚠️ Kode dan mata pelajaran harus dipilih</p>";
+    return;
+  }
 
   try {
     const res = await fetch("data/nilai.csv");
@@ -139,11 +100,11 @@ async function cek() {
         const tanggal = cols[3].trim();
         const nilai = cols[4].trim();
 
-        if (kode === kodeInput) {
+        if (kode === kodeInput && mapel === mapelInput) {
           output += `
             <div class="card">
               <b>${mapel}</b><br>
-              <small>${nama}</small><br><br>
+              Nama: ${nama}<br>
               Tanggal: ${tanggal}<br>
               Nilai: <b>${nilai}</b>
             </div>
@@ -152,10 +113,10 @@ async function cek() {
       }
     });
 
-    hasil.innerHTML = output || "<p>Data tidak ditemukan</p>";
+    hasil.innerHTML = output || "<p>❌ Data tidak ditemukan</p>";
 
   } catch (e) {
-    hasil.innerHTML = "<p>Gagal memuat data</p>";
+    hasil.innerHTML = "<p>❌ Gagal membaca data</p>";
     console.error(e);
   }
 }
