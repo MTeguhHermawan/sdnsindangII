@@ -5,20 +5,21 @@
 <title>Nilai Siswa</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-body { font-family: Arial; background:#f4f6f8; margin:0 }
+body { font-family: Arial, sans-serif; background:#f4f6f8; margin:0 }
 header { background:#1e88e5; color:white; padding:20px; text-align:center }
-.container { padding:20px; max-width:420px; margin:auto }
+.container { padding:20px }
 input, select, button {
   width:100%; padding:12px; margin-top:10px;
-  border-radius:8px; border:1px solid #ccc; font-size:15px
+  border-radius:8px; border:1px solid #ccc;
+  font-size:16px;
 }
-button { background:#1e88e5; color:white; border:none; font-weight:bold }
+button { background:#1e88e5; color:white; border:none }
 .card {
   background:white;
   padding:15px;
   margin-top:12px;
   border-radius:10px;
-  box-shadow:0 2px 5px rgba(0,0,0,.1)
+  box-shadow:0 2px 5px rgba(0,0,0,0.1)
 }
 </style>
 </head>
@@ -26,8 +27,8 @@ button { background:#1e88e5; color:white; border:none; font-weight:bold }
 <body>
 
 <header>
-  <h2>📊 Cek Nilai Siswa</h2>
-  <a href="akses.html" style="color:white">← Kembali</a>
+<h2>📊 Cek Nilai Siswa</h2>
+<a href="index.html" style="color:white;text-decoration:none">← Kembali</a>
 </header>
 
 <div class="container">
@@ -35,79 +36,67 @@ button { background:#1e88e5; color:white; border:none; font-weight:bold }
 
   <select id="mapel">
     <option value="">-- Pilih Mata Pelajaran --</option>
-    <option>Matematika</option>
-    <option>Bahasa Indonesia</option>
-    <option>IPAS</option>
-    <option>PPKn</option>
-    <option>Bahasa Sunda</option>
-    <option>Bahasa Inggris</option>
-    <option>SBDP</option>
+    <option value="MATEMATIKA">Matematika</option>
+    <option value="IPAS">IPAS</option>
+    <option value="SBDP">SBDP</option>
+    <option value="PKN">PKN</option>
+    <option value="BAHASA SUNDA">Bahasa Sunda</option>
+    <option value="BAHASA INGGRIS">Bahasa Inggris</option>
   </select>
 
-  <button onclick="cek()">Tampilkan Nilai</button>
+  <button onclick="cek()">Lihat Nilai</button>
+
   <div id="hasil"></div>
 </div>
 
 <script>
-function normalMapel(text) {
+function normalisasiMapel(text) {
   return text
-    .toLowerCase()
-    .replace(/\u00a0/g, " ")
-    .replace(/\s*\(.*?\)\s*/g, "")
-    .replace(/[^a-z\s]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
+    .split("(")[0]        // ambil sebelum tanda kurung
+    .trim()
+    .toUpperCase();       // samakan huruf
 }
 
 async function cek() {
-  const kodeInput = document.getElementById("kode").value.trim();
-  const mapelInput = document.getElementById("mapel").value;
+  const kode = document.getElementById("kode").value.trim();
+  const mapelDipilih = document.getElementById("mapel").value;
   const hasil = document.getElementById("hasil");
+  hasil.innerHTML = "";
 
-  if (!kodeInput || !mapelInput) {
-    hasil.innerHTML = "<p>⚠️ Kode dan mata pelajaran harus dipilih</p>";
+  if (!kode || !mapelDipilih) {
+    hasil.innerHTML = "<p>Lengkapi kode dan mata pelajaran</p>";
     return;
   }
 
-  try {
-    const res = await fetch("data/nilai.csv");
-    const text = await res.text();
-    const rows = text.replace(/\r/g,"").trim().split("\n").slice(1);
+  const res = await fetch("data/nilai.csv");
+  const text = await res.text();
+  const rows = text.trim().split("\n").slice(1);
 
-    let output = "";
-    let ditemukan = 0;
+  let output = "";
 
-    rows.forEach(row => {
-      const cols = row.split(";");
-      if (cols.length >= 5) {
-        const kode = cols[0].trim();
-        const nama = cols[1].trim();
-        const mapelCSV = cols[2].trim();
-        const tanggal = cols[3].trim();
-        const nilai = cols[4].trim();
+  rows.forEach(row => {
+    const cols = row.split(";");
+    if (cols.length >= 5) {
+      const k = cols[0].trim();
+      const nama = cols[1].trim();
+      const mapelCSV = normalisasiMapel(cols[2]);
+      const tanggal = cols[3].trim();
+      const nilai = cols[4].trim();
 
-        if (
-          kode === kodeInput &&
-          normalMapel(mapelCSV) === normalMapel(mapelInput)
-        ) {
-          ditemukan++;
-          output += `
-            <div class="card">
-              <b>${mapelCSV}</b><br>
-              Nama: ${nama}<br>
-              Tanggal: ${tanggal}<br>
-              Nilai: <b>${nilai}</b>
-            </div>`;
-        }
+      if (k === kode && mapelCSV === mapelDipilih) {
+        output += `
+          <div class="card">
+            <b>${cols[2]}</b><br>
+            Nama: ${nama}<br>
+            Tanggal: ${tanggal}<br>
+            Nilai: <b>${nilai}</b>
+          </div>
+        `;
       }
-    });
+    }
+  });
 
-    hasil.innerHTML = output || "<p>❌ Data tidak ditemukan</p>";
-
-  } catch (e) {
-    hasil.innerHTML = "<p>❌ Gagal membaca data</p>";
-    console.error(e);
-  }
+  hasil.innerHTML = output || "<p>Data tidak ditemukan</p>";
 }
 </script>
 
