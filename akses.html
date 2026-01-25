@@ -73,6 +73,13 @@ button {
 </div>
 
 <script>
+function normalMapel(text) {
+  return text
+    .toLowerCase()
+    .replace(/\s*\(.*?\)\s*/g, "")
+    .trim();
+}
+
 async function cek() {
   const kodeInput = document.getElementById("kode").value.trim();
   const mapelInput = document.getElementById("mapel").value;
@@ -96,14 +103,17 @@ async function cek() {
       if (cols.length >= 5) {
         const kode = cols[0].trim();
         const nama = cols[1].trim();
-        const mapel = cols[2].trim();
+        const mapelCSV = cols[2].trim();
         const tanggal = cols[3].trim();
         const nilai = cols[4].trim();
 
-        if (kode === kodeInput && mapel === mapelInput) {
+        if (
+          kode === kodeInput &&
+          normalMapel(mapelCSV) === normalMapel(mapelInput)
+        ) {
           output += `
             <div class="card">
-              <b>${mapel}</b><br>
+              <b>${mapelCSV}</b><br>
               Nama: ${nama}<br>
               Tanggal: ${tanggal}<br>
               Nilai: <b>${nilai}</b>
@@ -121,6 +131,5 @@ async function cek() {
   }
 }
 </script>
-
 </body>
 </html>
