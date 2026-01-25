@@ -52,7 +52,9 @@ button { background:#1e88e5; color:white; border:none; font-weight:bold }
 function normalMapel(text) {
   return text
     .toLowerCase()
+    .replace(/\u00a0/g, " ")
     .replace(/\s*\(.*?\)\s*/g, "")
+    .replace(/[^a-z\s]/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -73,6 +75,7 @@ async function cek() {
     const rows = text.replace(/\r/g,"").trim().split("\n").slice(1);
 
     let output = "";
+    let ditemukan = 0;
 
     rows.forEach(row => {
       const cols = row.split(";");
@@ -87,6 +90,7 @@ async function cek() {
           kode === kodeInput &&
           normalMapel(mapelCSV) === normalMapel(mapelInput)
         ) {
+          ditemukan++;
           output += `
             <div class="card">
               <b>${mapelCSV}</b><br>
