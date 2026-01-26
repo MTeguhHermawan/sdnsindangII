@@ -4,23 +4,20 @@
 <meta charset="UTF-8">
 <title>Nilai Siswa</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
 <style>
-body { font-family: Arial, sans-serif; background:#f4f6f8; margin:0 }
+body { font-family: Arial; background:#f4f6f8; margin:0 }
 header { background:#1e88e5; color:white; padding:20px; text-align:center }
 .container { padding:20px }
-input, select, button {
-  width:100%; padding:12px; margin-top:10px;
-  border-radius:8px; border:1px solid #ccc;
-  font-size:16px;
+input, button {
+  width:100%; padding:10px; margin-top:10px;
+  border-radius:6px; border:1px solid #ccc
 }
 button { background:#1e88e5; color:white; border:none }
 .card {
-  background:white;
-  padding:15px;
-  margin-top:12px;
-  border-radius:10px;
-  box-shadow:0 2px 5px rgba(0,0,0,0.1)
+  background:white; padding:15px; margin-top:15px; border-radius:8px
 }
+.mapel { font-weight:bold; margin-top:10px }
 </style>
 </head>
 
@@ -28,101 +25,64 @@ button { background:#1e88e5; color:white; border:none }
 
 <header>
 <h2>📊 Cek Nilai Siswa</h2>
-<a href="index.html" style="color:white;text-decoration:none">← Kembali</a>
+<a href="index.html" style="color:white">← Kembali</a>
 </header>
 
 <div class="container">
   <input id="kode" placeholder="Masukkan Kode Orang Tua">
-
-  <select id="mapel">
-    <option value="">-- Pilih Mata Pelajaran --</option>
-    <option value="MATEMATIKA">Matematika</option>
-    <option value="IPAS">IPAS</option>
-    <option value="SBDP">SBDP</option>
-    <option value="PKN">PKN</option>
-    <option value="BAHASA SUNDA">Bahasa Sunda</option>
-    <option value="BAHASA INGGRIS">Bahasa Inggris</option>
-  </select>
-
   <button onclick="cek()">Lihat Nilai</button>
-
   <div id="hasil"></div>
 </div>
 
 <script>
-function parseTanggal(tgl) {
-  const [d, m, y] = tgl.split("/");
-  return new Date(`${y}-${m}-${d}`);
-}
-
-function normalisasiMapel(teks) {
-  return teks
-    .toLowerCase()
-    .split("(")[0]
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
 async function cek() {
-  const kodeInput = document.getElementById("kode").value.trim();
-  const mapelDipilih = normalisasiMapel(
-    document.getElementById("mapel").value
-  );
-  const hasil = document.getElementById("hasil");
+  const kode = document.getElementById("kode").value.trim();
+  const res = await fetch("data/nilai.csv");
+  const text = await res.text();
 
-  try {
-    const res = await fetch("data/nilai.csv");
-    const text = await res.text();
+  const rows = text.split("\n").slice(1);
+  let data = [];
 
-    const rows = text.trim().split(/\r?\n/).slice(1);
-    let data = [];
+  rows.forEach(r => {
+    if (!r.trim()) return;
 
-    rows.forEach(row => {
-      if (!row) return;
+    let [k, nama, mapel, tanggal, nilai] = r.split(";").map(x => x.trim());
+    if (k === kode) {
+      data.push({
+        nama,
+        mapel: mapel.replace(/\s*\(.*?\)/g, ""), // buang ()
+        tanggal,
+        nilai
+      });
+    }
+  });
 
-      const delimiter = row.includes(";") ? ";" : ",";
-      const cols = row.split(delimiter).map(c => c.trim());
-
-      if (cols.length >= 5) {
-        const kode = cols[0];
-        const mapelCSV = cols[2];
-        const tanggal = cols[3];
-        const nilai = cols[4];
-
-        if (
-          kode === kodeInput &&
-          normalisasiMapel(mapelCSV) === mapelDipilih
-        ) {
-          data.push({
-            mapel: mapelCSV,
-            tanggal,
-            nilai,
-            dateObj: parseTanggal(tanggal)
-          });
-        }
-      }
-    });
-
-    // 🔥 URUTKAN TERBARU → TERLAMA
-    data.sort((a, b) => b.dateObj - a.dateObj);
-
-    let output = "";
-    data.forEach(d => {
-      output += `
-        <div class="card">
-          <b>${d.mapel}</b><br>
-          Tanggal: ${d.tanggal}<br>
-          Nilai: ${d.nilai}
-        </div>
-      `;
-    });
-
-    hasil.innerHTML = output || "<p>Data tidak ditemukan</p>";
-
-  } catch (e) {
-    hasil.innerHTML = "<p>Gagal membaca data nilai</p>";
-    console.error(e);
+  if (data.length === 0) {
+    document.getElementById("hasil").innerHTML = "<p>Data tidak ditemukan</p>";
+    return;
   }
+
+  // Urutkan tanggal terbaru
+  data.sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal));
+
+  // Kelompokkan per mapel
+  const grup = {};
+  data.forEach(d => {
+    if (!grup[d.mapel]) grup[d.mapel] = [];
+    grup[d.mapel].push(d);
+  });
+
+  let output = `<div class='card'><b>${data[0].nama}</b></div>`;
+
+  for (let m in grup) {
+    output += `<div class='card'><div class='mapel'>${m}</div>`;
+    grup[m].forEach(i => {
+      output += `${i.tanggal} : Nilai ${i.nilai}<br>`;
+    });
+    output += `</div>`;
+  }
+
+  document.getElementById("hasil").innerHTML = output;
 }
 </script>
 
