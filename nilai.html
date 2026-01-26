@@ -50,53 +50,63 @@ button { background:#1e88e5; color:white; border:none }
 </div>
 
 <script>
-function normalisasiMapel(text) {
-  return text
-    .split("(")[0]        // ambil sebelum tanda kurung
-    .trim()
-    .toUpperCase();       // samakan huruf
+function parseTanggal(tgl) {
+  const [d, m, y] = tgl.split("/");
+  return new Date(`${y}-${m}-${d}`);
 }
 
 async function cek() {
-  const kode = document.getElementById("kode").value.trim();
+  const kodeInput = document.getElementById("kode").value.trim();
   const mapelDipilih = document.getElementById("mapel").value;
   const hasil = document.getElementById("hasil");
-  hasil.innerHTML = "";
 
-  if (!kode || !mapelDipilih) {
-    hasil.innerHTML = "<p>Lengkapi kode dan mata pelajaran</p>";
-    return;
-  }
+  try {
+    const res = await fetch("data/nilai.csv");
+    const text = await res.text();
 
-  const res = await fetch("data/nilai.csv");
-  const text = await res.text();
-  const rows = text.trim().split("\n").slice(1);
+    const rows = text.trim().split(/\r?\n/).slice(1);
+    let data = [];
 
-  let output = "";
+    rows.forEach(row => {
+      if (!row) return;
+      const delimiter = row.includes(";") ? ";" : ",";
+      const cols = row.split(delimiter).map(c => c.trim());
 
-  rows.forEach(row => {
-    const cols = row.split(";");
-    if (cols.length >= 5) {
-      const k = cols[0].trim();
-      const nama = cols[1].trim();
-      const mapelCSV = normalisasiMapel(cols[2]);
-      const tanggal = cols[3].trim();
-      const nilai = cols[4].trim();
+      if (cols.length >= 5 && cols[0] === kodeInput) {
+        const mapelAsli = cols[2];
+        const mapelBersih = mapelAsli.split("(")[0].trim();
 
-      if (k === kode && mapelCSV === mapelDipilih) {
-        output += `
-          <div class="card">
-            <b>${cols[2]}</b><br>
-            Nama: ${nama}<br>
-            Tanggal: ${tanggal}<br>
-            Nilai: <b>${nilai}</b>
-          </div>
-        `;
+        if (mapelBersih === mapelDipilih) {
+          data.push({
+            mapel: mapelAsli,
+            tanggal: cols[3],
+            nilai: cols[4],
+            dateObj: parseTanggal(cols[3])
+          });
+        }
       }
-    }
-  });
+    });
 
-  hasil.innerHTML = output || "<p>Data tidak ditemukan</p>";
+    // 🔥 SORT TERBARU → TERLAMA
+    data.sort((a, b) => b.dateObj - a.dateObj);
+
+    let output = "";
+    data.forEach(d => {
+      output += `
+        <div class="card">
+          <b>${d.mapel}</b><br>
+          Tanggal: ${d.tanggal}<br>
+          Nilai: ${d.nilai}
+        </div>
+      `;
+    });
+
+    hasil.innerHTML = output || "<p>Data tidak ditemukan</p>";
+
+  } catch (e) {
+    hasil.innerHTML = "<p>Gagal membaca data</p>";
+    console.error(e);
+  }
 }
 </script>
 
