@@ -17,7 +17,12 @@ button { background:#1e88e5; color:white; border:none }
 .card {
   background:white; padding:15px; margin-top:15px; border-radius:8px
 }
-.mapel { font-weight:bold; margin-top:10px }
+.mapel { font-weight:bold; margin-bottom:5px }
+.avg {
+  margin-top:8px;
+  font-weight:bold;
+  color:#1e88e5
+}
 </style>
 </head>
 
@@ -66,7 +71,7 @@ async function cek() {
         nama,
         mapel: mapel.replace(/\s*\(.*?\)/g, ""),
         tanggal,
-        nilai,
+        nilai: Number(nilai),
         dateObj: parseTanggal(tanggal)
       });
     }
@@ -112,11 +117,18 @@ function tampil() {
   });
 
   for (let m in grup) {
-    hasil.innerHTML += `<div class="card"><div class="mapel">${m}</div>`;
+    let total = 0;
+    grup[m].forEach(i => total += i.nilai);
+    let rata = (total / grup[m].length).toFixed(1);
+
+    hasil.innerHTML += `<div class="card">
+      <div class="mapel">${m}</div>`;
+
     grup[m].forEach(i => {
       hasil.innerHTML += `${i.tanggal} : Nilai ${i.nilai}<br>`;
     });
-    hasil.innerHTML += `</div>`;
+
+    hasil.innerHTML += `<div class="avg">Rata-rata: ${rata}</div></div>`;
   }
 }
 </script>
