@@ -9,7 +9,7 @@
 body { font-family: Arial; background:#f4f6f8; margin:0 }
 header { background:#1e88e5; color:white; padding:20px; text-align:center }
 .container { padding:20px }
-input, button {
+input, select, button {
   width:100%; padding:10px; margin-top:10px;
   border-radius:6px; border:1px solid #ccc
 }
@@ -31,58 +31,81 @@ button { background:#1e88e5; color:white; border:none }
 <div class="container">
   <input id="kode" placeholder="Masukkan Kode Orang Tua">
   <button onclick="cek()">Lihat Nilai</button>
+
+  <select id="filterMapel" onchange="tampil()" style="display:none">
+    <option value="all">Semua Mapel</option>
+  </select>
+
   <div id="hasil"></div>
 </div>
 
 <script>
+let semuaData = [];
+
 async function cek() {
   const kode = document.getElementById("kode").value.trim();
   const res = await fetch("data/nilai.csv");
   const text = await res.text();
 
   const rows = text.split("\n").slice(1);
-  let data = [];
+  semuaData = [];
 
   rows.forEach(r => {
     if (!r.trim()) return;
-
     let [k, nama, mapel, tanggal, nilai] = r.split(";").map(x => x.trim());
     if (k === kode) {
-      data.push({
+      semuaData.push({
         nama,
-        mapel: mapel.replace(/\s*\(.*?\)/g, ""), // buang ()
+        mapel: mapel.replace(/\s*\(.*?\)/g, ""),
         tanggal,
         nilai
       });
     }
   });
 
-  if (data.length === 0) {
+  if (semuaData.length === 0) {
     document.getElementById("hasil").innerHTML = "<p>Data tidak ditemukan</p>";
     return;
   }
 
-  // Urutkan tanggal terbaru
-  data.sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal));
+  // urutkan tanggal terbaru
+  semuaData.sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal));
 
-  // Kelompokkan per mapel
-  const grup = {};
+  // isi dropdown mapel
+  const select = document.getElementById("filterMapel");
+  select.innerHTML = `<option value="all">Semua Mapel</option>`;
+  [...new Set(semuaData.map(d => d.mapel))].forEach(m => {
+    select.innerHTML += `<option value="${m}">${m}</option>`;
+  });
+  select.style.display = "block";
+
+  tampil();
+}
+
+function tampil() {
+  const pilih = document.getElementById("filterMapel").value;
+  const hasil = document.getElementById("hasil");
+  hasil.innerHTML = "";
+
+  let data = pilih === "all"
+    ? semuaData
+    : semuaData.filter(d => d.mapel === pilih);
+
+  let grup = {};
   data.forEach(d => {
     if (!grup[d.mapel]) grup[d.mapel] = [];
     grup[d.mapel].push(d);
   });
 
-  let output = `<div class='card'><b>${data[0].nama}</b></div>`;
+  hasil.innerHTML = `<div class='card'><b>${semuaData[0].nama}</b></div>`;
 
   for (let m in grup) {
-    output += `<div class='card'><div class='mapel'>${m}</div>`;
+    hasil.innerHTML += `<div class='card'><div class='mapel'>${m}</div>`;
     grup[m].forEach(i => {
-      output += `${i.tanggal} : Nilai ${i.nilai}<br>`;
+      hasil.innerHTML += `${i.tanggal} : Nilai ${i.nilai}<br>`;
     });
-    output += `</div>`;
+    hasil.innerHTML += `</div>`;
   }
-
-  document.getElementById("hasil").innerHTML = output;
 }
 </script>
 
