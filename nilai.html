@@ -55,9 +55,19 @@ function parseTanggal(tgl) {
   return new Date(`${y}-${m}-${d}`);
 }
 
+function normalisasiMapel(teks) {
+  return teks
+    .toLowerCase()
+    .split("(")[0]
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 async function cek() {
   const kodeInput = document.getElementById("kode").value.trim();
-  const mapelDipilih = document.getElementById("mapel").value;
+  const mapelDipilih = normalisasiMapel(
+    document.getElementById("mapel").value
+  );
   const hasil = document.getElementById("hasil");
 
   try {
@@ -69,25 +79,31 @@ async function cek() {
 
     rows.forEach(row => {
       if (!row) return;
+
       const delimiter = row.includes(";") ? ";" : ",";
       const cols = row.split(delimiter).map(c => c.trim());
 
-      if (cols.length >= 5 && cols[0] === kodeInput) {
-        const mapelAsli = cols[2];
-        const mapelBersih = mapelAsli.split("(")[0].trim();
+      if (cols.length >= 5) {
+        const kode = cols[0];
+        const mapelCSV = cols[2];
+        const tanggal = cols[3];
+        const nilai = cols[4];
 
-        if (mapelBersih === mapelDipilih) {
+        if (
+          kode === kodeInput &&
+          normalisasiMapel(mapelCSV) === mapelDipilih
+        ) {
           data.push({
-            mapel: mapelAsli,
-            tanggal: cols[3],
-            nilai: cols[4],
-            dateObj: parseTanggal(cols[3])
+            mapel: mapelCSV,
+            tanggal,
+            nilai,
+            dateObj: parseTanggal(tanggal)
           });
         }
       }
     });
 
-    // 🔥 SORT TERBARU → TERLAMA
+    // 🔥 URUTKAN TERBARU → TERLAMA
     data.sort((a, b) => b.dateObj - a.dateObj);
 
     let output = "";
@@ -104,7 +120,7 @@ async function cek() {
     hasil.innerHTML = output || "<p>Data tidak ditemukan</p>";
 
   } catch (e) {
-    hasil.innerHTML = "<p>Gagal membaca data</p>";
+    hasil.innerHTML = "<p>Gagal membaca data nilai</p>";
     console.error(e);
   }
 }
