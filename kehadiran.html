@@ -6,29 +6,55 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-body { font-family: Arial; background:#f4f6f8; margin:0 }
-header { background:#1e88e5; color:white; padding:20px; text-align:center }
-.container { padding:20px }
+body {
+  font-family: Arial, sans-serif;
+  background:#f4f6f8;
+  margin:0;
+}
+header {
+  background:#1e88e5;
+  color:white;
+  padding:20px;
+  text-align:center;
+}
+.container {
+  padding:20px;
+}
 input, button {
-  width:100%; padding:10px; margin-top:10px;
-  border-radius:6px; border:1px solid #ccc
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  border-radius:8px;
+  border:1px solid #ccc;
 }
-button { background:#1e88e5; color:white; border:none }
+button {
+  background:#1e88e5;
+  color:white;
+  border:none;
+  font-size:16px;
+}
 .card {
-  background:white; padding:15px; margin-top:15px; border-radius:8px
+  background:white;
+  padding:15px;
+  margin-top:15px;
+  border-radius:10px;
+  box-shadow:0 2px 6px rgba(0,0,0,.05);
 }
-.status { font-weight:bold }
-.Hadir { color:green }
-.Izin { color:orange }
-.Alpha { color:red }
+.tanggal {
+  font-size:14px;
+  color:#555;
+}
+.status {
+  font-weight:bold;
+}
 </style>
 </head>
 
 <body>
 
 <header>
-<h2>📅 Cek Kehadiran Siswa</h2>
-<a href="index.html" style="color:white">← Kembali</a>
+  <h2>📅 Cek Kehadiran Siswa</h2>
+  <a href="index.html" style="color:white">← Kembali</a>
 </header>
 
 <div class="container">
@@ -38,59 +64,81 @@ button { background:#1e88e5; color:white; border:none }
 </div>
 
 <script>
-// 🔹 ubah DD/MM/YYYY → Date
 function parseTanggal(tgl) {
-  const [d,m,y] = tgl.split("/");
-  return new Date(`${y}-${m}-${d}`);
+  const p = tgl.split("/").map(Number);
+  let d, m, y;
+
+  // Deteksi format otomatis
+  if (p[0] > 12) {
+    // DD/MM/YYYY
+    d = p[0]; m = p[1]; y = p[2];
+  } else {
+    // MM/DD/YYYY
+    m = p[0]; d = p[1]; y = p[2];
+  }
+
+  return new Date(y, m - 1, d);
 }
 
 async function cek() {
   const kode = document.getElementById("kode").value.trim();
-  const res = await fetch("data/kehadiran.csv");
-  const text = await res.text();
+  const hasil = document.getElementById("hasil");
+  hasil.innerHTML = "";
 
-  let data = [];
-  const rows = text.split("\n").slice(1);
+  try {
+    const res = await fetch("data/kehadiran.csv");
+    const text = await res.text();
 
-  rows.forEach(r => {
-    if (!r.trim()) return;
+    let data = [];
+    const rows = text.split("\n").slice(1);
 
-    const kolom = r.split(";").map(x => x.trim());
-    if (kolom.length < 4) return;
+    rows.forEach(r => {
+      if (!r.trim()) return;
 
-    const [k, nama, tanggal, status] = kolom;
+      const kolom = r.split(",").map(x => x.trim());
+      if (kolom.length < 4) return;
 
-    if (k === kode) {
-      data.push({
-        nama,
-        tanggal,
-        status,
-        dateObj: parseTanggal(tanggal)
-      });
+      const [k, nama, tanggal, status] = kolom;
+
+      if (k === kode) {
+        data.push({
+          nama,
+          tanggal,
+          status,
+          dateObj: parseTanggal(tanggal)
+        });
+      }
+    });
+
+    if (data.length === 0) {
+      hasil.innerHTML = "<p>Data tidak ditemukan</p>";
+      return;
     }
-  });
 
-  if (data.length === 0) {
-    document.getElementById("hasil").innerHTML =
-      "<p>Data tidak ditemukan</p>";
-    return;
-  }
+    // URUTKAN TERBARU → TERLAMA
+    data.sort((a, b) => b.dateObj - a.dateObj);
 
-  // 🔥 URUTKAN: TERBARU → TERLAMA
-  data.sort((a,b) => b.dateObj - a.dateObj);
-
-  let output = `<div class="card"><b>${data[0].nama}</b></div>`;
-
-  data.forEach(d => {
-    output += `
+    // TAMPILKAN NAMA
+    hasil.innerHTML += `
       <div class="card">
-        ${d.tanggal}<br>
-        <span class="status ${d.status}">${d.status}</span>
+        <b>${data[0].nama}</b>
       </div>
     `;
-  });
 
-  document.getElementById("hasil").innerHTML = output;
+    // TAMPILKAN DATA
+    data.forEach(d => {
+      hasil.innerHTML += `
+        <div class="card">
+          <div class="tanggal">${d.tanggal}</div>
+          <div class="status">${d.status}</div>
+        </div>
+      `;
+    });
+
+  } catch (e) {
+    hasil.innerHTML = "<p>Gagal membaca data</p>";
+    console.error(e);
+  }
 }
 </script>
 
