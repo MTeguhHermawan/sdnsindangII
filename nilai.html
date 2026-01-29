@@ -17,27 +17,24 @@ button { background:#1e88e5; color:white; border:none }
 .card {
   background:white; padding:15px; margin-top:15px; border-radius:8px
 }
-.mapel { font-weight:bold; margin-bottom:5px }
-.avg {
-  margin-top:8px;
-  font-weight:bold;
-  color:#1e88e5
-}
-.materi {
-  font-size: 0.9em;
-  color: #555;
-}
+.mapel { font-weight:bold }
+.avg { margin-top:6px; color:#1e88e5; font-weight:bold }
 </style>
 </head>
 
 <body>
 
 <header>
-<h2>📊 Cek Nilai Siswa</h2>
+<h2>📊 Nilai Siswa</h2>
 <a href="index.html" style="color:white">← Kembali</a>
 </header>
 
 <div class="container">
+  <select id="kelas">
+    <option value="A">Kelas VI A</option>
+    <option value="B">Kelas VI B</option>
+  </select>
+
   <input id="kode" placeholder="Masukkan Kode Orang Tua">
   <button onclick="cek()">Lihat Nilai</button>
 
@@ -50,13 +47,17 @@ button { background:#1e88e5; color:white; border:none }
 let semuaData = [];
 
 function parseTanggal(tgl) {
-  const [d,m,y] = tgl.split("/");
+  const p = tgl.split("/");
+  let m = p[0].padStart(2,"0");
+  let d = p[1].padStart(2,"0");
+  let y = p[2].length === 2 ? "20"+p[2] : p[2];
   return new Date(`${y}-${m}-${d}`);
 }
 
 async function cek() {
   const kode = document.getElementById("kode").value.trim();
-  const res = await fetch("data/nilai.csv");
+  const kelas = document.getElementById("kelas").value;
+  const res = await fetch(`data/nilai_kelas${kelas}.csv`);
   const text = await res.text();
 
   semuaData = [];
@@ -64,17 +65,16 @@ async function cek() {
 
   rows.forEach(r => {
     if (!r.trim()) return;
+    const col = r.split(";").map(x => x.trim());
+    if (col.length < 5) return;
 
-    const kolom = r.split(";").map(x => x.trim());
-    if (kolom.length < 5) return;
-
-    const [k, nama, mapel, tanggal, nilai] = kolom;
+    const [k, nama, mapel, tanggal, nilai] = col;
 
     if (k === kode) {
       semuaData.push({
         nama,
-        mapelUtama: mapel.replace(/\s*\(.*?\)/g, ""),
-        mapelFull: mapel, // ← MATERI DISIMPAN
+        mapelAsli: mapel,
+        mapel: mapel.replace(/\s*\(.*?\)/g,""),
         tanggal,
         nilai: Number(nilai),
         dateObj: parseTanggal(tanggal)
@@ -94,7 +94,7 @@ async function cek() {
   const select = document.getElementById("filterMapel");
   select.innerHTML = `<option value="all">Semua Mapel</option>`;
 
-  [...new Set(semuaData.map(d => d.mapelUtama))].forEach(m => {
+  [...new Set(semuaData.map(d => d.mapel))].forEach(m => {
     select.innerHTML += `<option value="${m}">${m}</option>`;
   });
 
@@ -109,14 +109,14 @@ function tampil() {
 
   const data = pilih === "all"
     ? semuaData
-    : semuaData.filter(d => d.mapelUtama === pilih);
+    : semuaData.filter(d => d.mapel === pilih);
 
   hasil.innerHTML += `<div class="card"><b>${data[0].nama}</b></div>`;
 
   let grup = {};
   data.forEach(d => {
-    if (!grup[d.mapelUtama]) grup[d.mapelUtama] = [];
-    grup[d.mapelUtama].push(d);
+    if (!grup[d.mapel]) grup[d.mapel] = [];
+    grup[d.mapel].push(d);
   });
 
   for (let m in grup) {
@@ -128,10 +128,7 @@ function tampil() {
       <div class="mapel">${m}</div>`;
 
     grup[m].forEach(i => {
-      hasil.innerHTML += `
-        <div class="materi">
-          ${i.tanggal} : ${i.mapelFull} → Nilai ${i.nilai}
-        </div>`;
+      hasil.innerHTML += `${i.tanggal} — ${i.mapelAsli} : <b>${i.nilai}</b><br>`;
     });
 
     hasil.innerHTML += `<div class="avg">Rata-rata: ${rata}</div></div>`;
