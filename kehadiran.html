@@ -118,14 +118,14 @@ function tampil() {
     ? semuaData
     : semuaData.filter(d => d.bulan === pilih);
 
-  let hadir=0, terlambat=0, alpha=0, sakit=0, ijin=0;
+  let hadir=0, terlambat=0, alpha=0, sakit=0, izin=0;
 
   data.forEach(d => {
     switch (d.status) {
       case "HADIR": hadir++; break;
       case "TERLAMBAT": terlambat++; break;
       case "SAKIT": sakit++; break;
-      case "IJIN": ijin++; break;
+      case "IZIN": izin++; break;
       default: alpha++;
     }
   });
@@ -137,7 +137,7 @@ function tampil() {
         ✔ HADIR: ${hadir}<br>
         ⏰ TERLAMBAT: ${terlambat}<br>
         🤒 SAKIT: ${sakit}<br>
-        📝 IJIN: ${ijin}<br>
+        📝 IZIN: ${izin}<br>
         ❌ ALPHA: ${alpha}
       </div>
     </div>
