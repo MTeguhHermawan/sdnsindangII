@@ -1,13 +1,8 @@
 const pengumuman = [
-  {
-    judul: "Isra Miraj 1447 H",
-    tanggal: "28 Januari 2026",
-    isi: "Kegiatan peringatan Isra Miraj 1447 H, di kampus SDN Sindang II."
-  },
-  {
-    judul: "Sosialisasi TKA",
-    tanggal: "27 Januari 2026",
-    isi: "Rapat bersama orang tua / wali asuh membahas informasi dan teknis mengenai TKA (Tes Kemampuan Akademik) Pukul 09.00 WIB bertempat di ruang kelas 2."
+     {
+    judul: "Libur bulan Febuari 2026",
+    tanggal: "16 - 21 Febuari 2026",
+    isi: "16 - 17 Febuari 2026 cuti bersama dan perayaan imlek, 18 - 21 Febuari 2026 Libur awal Ramadan, anak - anak masuk kembali hari senin tgl 23 Febuari 2026."
   },
   {
     judul: "Lini Masa Pelaksanaan TKA SD/MI/SDLB/Paket A/sederajat",
