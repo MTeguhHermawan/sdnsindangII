@@ -1,6 +1,6 @@
 const pengumuman = [
      {
-    judul: "Libur bulan Febuari 2026",
+    judul: "Libur Bulan Febuari 2026",
     tanggal: "16 - 21 Febuari 2026",
     isi: "16 - 17 Febuari 2026 cuti bersama dan perayaan imlek, 18 - 21 Febuari 2026 Libur awal Ramadan, anak - anak masuk kembali hari senin tgl 23 Febuari 2026."
   },
