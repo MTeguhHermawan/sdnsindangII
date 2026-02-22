@@ -145,6 +145,17 @@
             margin-top: 40px;
             border-top: 5px solid #fdd835;
         }
+    html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto; /* memastikan scroll vertikal aktif jika konten melebihi tinggi */
+}
+
+.container {
+    min-height: 100%; /* memastikan container setinggi minimal layar */
+    padding-bottom: 40px; /* memberi ruang footer */
+}
     </style>
 </head>
 <body class="ramadan-ornament">
