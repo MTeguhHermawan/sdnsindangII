@@ -5,17 +5,17 @@
     <title>Video Anak - Ramadan Ceria</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        /* ===== Style sama seperti sebelumnya ===== */
         body {
             font-family: 'Arial', sans-serif;
             background: linear-gradient(145deg, #f9f3e6 0%, #f0e2c5 100%);
             margin: 0;
             padding: 0;
             color: #2c3e50;
+            overflow-y: auto; /* memastikan scroll vertikal */
         }
         .ramadan-ornament {
             position: relative;
-            overflow: hidden;
+            /* overflow: hidden; dihapus agar tidak memotong */
         }
         .ramadan-ornament::before {
             content: "🌙 ⭐ 🌙 ⭐ 🌙";
@@ -28,6 +28,7 @@
             white-space: nowrap;
             animation: float 10s linear infinite;
             pointer-events: none;
+            z-index: 0;
         }
         @keyframes float {
             from { transform: translateX(-100%); }
@@ -40,6 +41,8 @@
             text-align: center;
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             border-bottom: 5px solid #fdd835;
+            position: relative;
+            z-index: 1;
         }
         header h1 {
             margin: 0;
@@ -55,6 +58,8 @@
             max-width: 1300px;
             margin: 0 auto;
             padding: 20px;
+            position: relative;
+            z-index: 1;
         }
         .back-link {
             display: inline-block;
@@ -76,6 +81,7 @@
             grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
             gap: 25px;
             margin-top: 30px;
+            margin-bottom: 40px; /* jarak dengan footer */
         }
         .video-card {
             background: white;
@@ -142,20 +148,11 @@
             padding: 25px;
             background: #2e7d32;
             color: white;
-            margin-top: 40px;
             border-top: 5px solid #fdd835;
+            position: relative;
+            z-index: 1;
+            clear: both;
         }
-    html, body {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    overflow-y: auto; /* memastikan scroll vertikal aktif jika konten melebihi tinggi */
-}
-
-.container {
-    min-height: 100%; /* memastikan container setinggi minimal layar */
-    padding-bottom: 40px; /* memberi ruang footer */
-}
     </style>
 </head>
 <body class="ramadan-ornament">
@@ -180,7 +177,7 @@
                 const response = await fetch('video.csv');
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const csvText = await response.text();
-                console.log('CSV mentah:', csvText.substring(0, 200)); // log sebagian
+                console.log('CSV mentah:', csvText.substring(0, 200));
                 return parseCSV(csvText);
             } catch (error) {
                 console.error('Gagal memuat CSV:', error);
