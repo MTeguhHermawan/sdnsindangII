@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Video Anak - Ramadan Ceria</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        /* ===== Style sama seperti sebelumnya ===== */
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(145deg, #f9f3e6 0%, #f0e2c5 100%);
+            margin: 0;
+            padding: 0;
+            color: #2c3e50;
+        }
+        .ramadan-ornament {
+            position: relative;
+            overflow: hidden;
+        }
+        .ramadan-ornament::before {
+            content: "🌙 ⭐ 🌙 ⭐ 🌙";
+            position: absolute;
+            top: 10px;
+            left: 0;
+            width: 100%;
+            font-size: 24px;
+            color: rgba(255, 215, 0, 0.2);
+            white-space: nowrap;
+            animation: float 10s linear infinite;
+            pointer-events: none;
+        }
+        @keyframes float {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(100%); }
+        }
+        header {
+            background: linear-gradient(135deg, #2e7d32, #f9a825);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            border-bottom: 5px solid #fdd835;
+        }
+        header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        header p {
+            margin: 10px 0 0;
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .back-link {
+            display: inline-block;
+            margin: 20px 0;
+            padding: 10px 20px;
+            background-color: #f9a825;
+            color: white;
+            text-decoration: none;
+            border-radius: 30px;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: background 0.3s;
+        }
+        .back-link:hover {
+            background-color: #f57f17;
+        }
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+        .video-card {
+            background: white;
+            border-radius: 25px 25px 15px 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+            border: 1px solid #f9a825;
+        }
+        .video-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 18px 35px rgba(0,0,0,0.2);
+        }
+        .video-title {
+            background: linear-gradient(145deg, #f9a825, #fdd835);
+            padding: 15px;
+            font-weight: bold;
+            font-size: 1.2em;
+            color: #2e7d32;
+            text-align: center;
+            border-bottom: 3px solid #2e7d32;
+            word-break: break-word;
+        }
+        .embed-container {
+            position: relative;
+            padding-bottom: 100%; /* 1:1 aspect ratio */
+            height: 0;
+            overflow: hidden;
+            background: #f0f0f0;
+        }
+        .embed-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .fallback-link {
+            display: block;
+            text-align: center;
+            padding: 20px;
+            background: #e8f5e8;
+            color: #2e7d32;
+            font-weight: bold;
+            text-decoration: none;
+        }
+        .fallback-link:hover {
+            text-decoration: underline;
+        }
+        .loading, .error {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.5em;
+        }
+        .error {
+            color: #c62828;
+            background: #ffcdd2;
+            border-radius: 10px;
+            margin: 20px;
+        }
+        footer {
+            text-align: center;
+            padding: 25px;
+            background: #2e7d32;
+            color: white;
+            margin-top: 40px;
+            border-top: 5px solid #fdd835;
+        }
+    </style>
+</head>
+<body class="ramadan-ornament">
+    <header>
+        <h1>🌙 Video Kegiatan Ramadan Ceria</h1>
+        <p>Momen indah bersama anak-anak kelas VI</p>
+    </header>
+    <div class="container">
+        <a href="ramadan.html" class="back-link">← Kembali ke Ramadan Ceria</a>
+        <div id="video-container">
+            <div class="loading">Memuat video...</div>
+        </div>
+    </div>
+    <footer>
+        © 2026 SDN Sindang II -- Kelas VI | Ramadan 1447 H
+    </footer>
+
+    <script>
+        // Fungsi memuat CSV dengan delimiter titik koma
+        async function loadCSV() {
+            try {
+                const response = await fetch('video.csv');
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const csvText = await response.text();
+                console.log('CSV mentah:', csvText.substring(0, 200)); // log sebagian
+                return parseCSV(csvText);
+            } catch (error) {
+                console.error('Gagal memuat CSV:', error);
+                return null;
+            }
+        }
+
+        // Parser CSV dengan delimiter titik koma, membersihkan kutip dan spasi
+        function parseCSV(csv) {
+            const lines = csv.split('\n').filter(line => line.trim() !== '');
+            if (lines.length === 0) return [];
+
+            // Ambil header, pisahkan dengan titik koma
+            const headers = lines[0].split(';').map(h => h.trim().replace(/^"|"$/g, ''));
+            console.log('Header:', headers);
+
+            const result = [];
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (line === '') continue;
+
+                // Pisahkan dengan titik koma
+                let parts = line.split(';');
+                // Bersihkan setiap part: buang spasi dan kutip di awal/akhir
+                parts = parts.map(p => p.trim().replace(/^"|"$/g, ''));
+
+                // Ambil tiga kolom pertama (judul, platform, url)
+                if (parts.length < 3) continue;
+
+                const judul = parts[0];
+                const platform = parts[1].toLowerCase();
+                const url = parts[2];
+
+                // Lewati jika kosong
+                if (!judul || !platform || !url) continue;
+
+                result.push({ judul, platform, url });
+            }
+            console.log('Data video setelah parsing:', result);
+            return result;
+        }
+
+        // Konversi URL ke embed (Instagram / TikTok)
+        function getEmbedUrl(platform, url) {
+            // Normalisasi platform
+            if (platform.includes('insta')) { // menangani 'instagram' dan 'instagran'
+                // Ekstrak ID dari Instagram post/reel
+                const match = url.match(/(?:instagram\.com\/p\/|instagram\.com\/reel\/)([^/?]+)/);
+                if (match) {
+                    return `https://www.instagram.com/p/${match[1]}/embed`;
+                }
+            } else if (platform.includes('tiktok')) {
+                const match = url.match(/tiktok\.com\/@[^/]+\/video\/(\d+)/);
+                if (match) {
+                    return `https://www.tiktok.com/embed/v2/${match[1]}`;
+                }
+            }
+            return null;
+        }
+
+        async function renderVideos() {
+            const container = document.getElementById('video-container');
+            const videos = await loadCSV();
+
+            if (!videos || videos.length === 0) {
+                container.innerHTML = '<div class="error">❌ Tidak ada video yang tersedia. Periksa konsol untuk detail error.</div>';
+                return;
+            }
+
+            let html = '<div class="video-grid">';
+            videos.forEach(video => {
+                const embedUrl = getEmbedUrl(video.platform, video.url);
+                if (!embedUrl) {
+                    // Fallback: tampilkan tautan langsung
+                    html += `
+                        <div class="video-card">
+                            <div class="video-title">${video.judul}</div>
+                            <div class="embed-container" style="background:#fff3e0; display:flex; align-items:center; justify-content:center;">
+                                <a href="${video.url}" target="_blank" class="fallback-link" rel="noopener noreferrer">
+                                    🔗 Buka Video di ${video.platform}
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                html += `
+                    <div class="video-card">
+                        <div class="video-title">${video.judul}</div>
+                        <div class="embed-container">
+                            <iframe src="${embedUrl}" allowfullscreen loading="lazy"></iframe>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        renderVideos();
+    </script>
+</body>
+</html>

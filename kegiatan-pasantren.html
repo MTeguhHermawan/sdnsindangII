@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Kegiatan Pasantren - Ramadan Ceria</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f7f3e9;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #2e7d32;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    .container {
+      padding: 30px 20px;
+      max-width: 800px;
+      margin: auto;
+    }
+    .kegiatan {
+      background: white;
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 15px rgba(0,40,0,0.1);
+      border-left: 10px solid #ffb74d;
+    }
+    .kegiatan h3 {
+      margin-top: 0;
+      color: #2e7d32;
+    }
+    .kegiatan p {
+      margin: 8px 0;
+      font-size: 18px;
+    }
+    .back {
+      text-align: center;
+      margin-top: 40px;
+    }
+    .back a {
+      background: #b68b40;
+      color: white;
+      padding: 10px 25px;
+      border-radius: 40px;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    footer {
+      text-align: center;
+      padding: 20px;
+      color: #777;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🕌 Kegiatan Pasantren Ramadan</h1>
+    <p>Informasi terkini kegiatan santri</p>
+  </header>
+  <div class="container" id="daftar-kegiatan">
+    <p style="text-align:center;">Memuat kegiatan...</p>
+  </div>
+  <div class="back">
+    <a href="ramadan.html">⬅ Kembali ke Ramadan Ceria</a>
+  </div>
+  <footer>
+    SDN Sindang II – Kelas VI
+  </footer>
+  <script>
+    fetch('kegiatan.json')
+      .then(response => response.json())
+      .then(data => {
+        const container = document.getElementById('daftar-kegiatan');
+        container.innerHTML = '';
+        if (data.length === 0) {
+          container.innerHTML = '<p style="text-align:center;">Belum ada kegiatan.</p>';
+          return;
+        }
+        data.forEach(item => {
+          const div = document.createElement('div');
+          div.className = 'kegiatan';
+          div.innerHTML = `
+            <h3>${item.tanggal}</h3>
+            <p><strong>Kegiatan:</strong> ${item.kegiatan}</p>
+            <p><strong>Waktu:</strong> ${item.waktu}</p>
+            <p><strong>Tempat:</strong> ${item.tempat}</p>
+          `;
+          container.appendChild(div);
+        });
+      })
+      .catch(err => {
+        document.getElementById('daftar-kegiatan').innerHTML = '<p style="color:red; text-align:center;">Gagal memuat data kegiatan.</p>';
+        console.error(err);
+      });
+  </script>
+</body>
+</html>
