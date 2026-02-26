@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <title>Video Anak - Ramadan Ceria</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- Papa Parse untuk membaca CSV dengan benar -->
+    <!-- Papa Parse untuk membaca CSV -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    <!-- Instagram embed script -->
+    <!-- Instagram embed script (WAJIB ADA) -->
     <script async src="//www.instagram.com/embed.js"></script>
     <style>
         body {
@@ -225,10 +225,18 @@
             if (window.instgrm) {
                 window.instgrm.Embeds.process();
             } else {
-                // Tunggu sebentar hingga script embed.js siap
-                setTimeout(() => {
-                    if (window.instgrm) window.instgrm.Embeds.process();
-                }, 2000);
+                // Tunggu script embed.js selesai dimuat
+                let attempts = 0;
+                const interval = setInterval(() => {
+                    if (window.instgrm) {
+                        clearInterval(interval);
+                        window.instgrm.Embeds.process();
+                    } else if (attempts > 20) { // timeout 10 detik
+                        clearInterval(interval);
+                        console.warn('Instagram embed script tidak dimuat');
+                    }
+                    attempts++;
+                }, 500);
             }
         }
 
