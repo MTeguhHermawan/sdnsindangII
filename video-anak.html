@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <title>Video Anak - Ramadan Ceria</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Papa Parse untuk membaca CSV dengan benar -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- Instagram embed script -->
+    <script async src="//www.instagram.com/embed.js"></script>
     <style>
         body {
             font-family: 'Arial', sans-serif;
@@ -106,30 +110,14 @@
         }
         .embed-container {
             position: relative;
-            padding-bottom: 100%; /* 1:1 aspect ratio */
-            height: 0;
-            overflow: hidden;
-            background: #f0f0f0;
-        }
-        .embed-container iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
             width: 100%;
-            height: 100%;
-            border: none;
+            background: #f0f0f0;
+            overflow: hidden;
         }
-        .fallback-link {
-            display: block;
-            text-align: center;
-            padding: 20px;
-            background: #e8f5e8;
-            color: #2e7d32;
-            font-weight: bold;
-            text-decoration: none;
-        }
-        .fallback-link:hover {
-            text-decoration: underline;
+        .embed-container blockquote {
+            margin: 0;
+            width: 100% !important;
+            max-width: 100% !important;
         }
         .loading, .error {
             text-align: center;
@@ -170,83 +158,45 @@
     </footer>
 
     <script>
-        // Fungsi memuat CSV
+        // Fungsi memuat dan memparse CSV dengan Papa Parse
         async function loadCSV() {
             try {
                 const response = await fetch('video.csv');
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const csvText = await response.text();
-                return parseCSV(csvText);
+                return new Promise((resolve) => {
+                    Papa.parse(csvText, {
+                        delimiter: ",",          // delimiter koma
+                        quoteChar: '"',           // karakter kutip
+                        header: false,            // tidak ada header otomatis
+                        skipEmptyLines: true,
+                        complete: (results) => {
+                            let data = results.data;
+                            // Buang baris header jika ada (baris pertama berisi "judul")
+                            if (data.length > 0 && data[0][0] === 'judul') {
+                                data = data.slice(1);
+                            }
+                            // Ambil kolom: judul, platform, embedHtml
+                            const videos = data.map(row => ({
+                                judul: row[0] ? row[0].trim() : '',
+                                platform: row[1] ? row[1].trim() : '',
+                                embedHtml: row[2] ? row[2].trim() : ''
+                            })).filter(v => v.judul && v.embedHtml);
+                            resolve(videos);
+                        },
+                        error: (err) => {
+                            console.error('Parse error:', err);
+                            resolve([]);
+                        }
+                    });
+                });
             } catch (error) {
                 console.error('Gagal memuat CSV:', error);
-                return null;
+                return [];
             }
         }
 
-        // Parser CSV dengan delimiter koma, menangani kolom berisi petik
-        function parseCSV(csv) {
-            const lines = csv.split('\n').filter(line => line.trim() !== '');
-            if (lines.length === 0) return [];
-
-            // Abaikan baris header (kolom: judul, platform, url)
-            const result = [];
-            for (let i = 1; i < lines.length; i++) {
-                const line = lines[i].trim();
-                if (!line) continue;
-
-                // Cari koma pertama dan kedua
-                let firstComma = line.indexOf(',');
-                if (firstComma === -1) continue;
-                let secondComma = line.indexOf(',', firstComma + 1);
-                if (secondComma === -1) continue;
-
-                let judul = line.substring(0, firstComma).trim();
-                let platform = line.substring(firstComma + 1, secondComma).trim();
-                let sisa = line.substring(secondComma + 1).trim();
-
-                // Ekstrak URL yang mungkin diapit petik
-                let url = '';
-                if (sisa.startsWith('"')) {
-                    // Cari petik penutup
-                    let endQuote = sisa.indexOf('"', 1);
-                    if (endQuote !== -1) {
-                        url = sisa.substring(1, endQuote);
-                    } else {
-                        url = sisa; // fallback
-                    }
-                } else {
-                    // Jika tidak diapit petik, ambil sampai koma berikutnya
-                    let nextComma = sisa.indexOf(',');
-                    url = nextComma === -1 ? sisa : sisa.substring(0, nextComma);
-                }
-                url = url.trim();
-
-                if (judul && platform && url) {
-                    result.push({ judul, platform, url });
-                }
-            }
-            console.log('Data video:', result);
-            return result;
-        }
-
-        // Konversi URL ke embed Instagram / TikTok
-        function getEmbedUrl(platform, url) {
-            platform = platform.toLowerCase();
-            if (platform.includes('insta')) { // menangani 'instagram' atau 'instagran'
-                const match = url.match(/(?:instagram\.com\/(?:p|reel)\/)([^/?]+)/);
-                if (match) {
-                    // Gunakan embed /p/ (bekerja untuk post dan reel)
-                    return `https://www.instagram.com/p/${match[1]}/embed`;
-                }
-            } else if (platform.includes('tiktok')) {
-                const match = url.match(/tiktok\.com\/@[^/]+\/video\/(\d+)/);
-                if (match) {
-                    return `https://www.tiktok.com/embed/v2/${match[1]}`;
-                }
-            }
-            return null;
-        }
-
+        // Render video ke halaman
         async function renderVideos() {
             const container = document.getElementById('video-container');
             const videos = await loadCSV();
@@ -258,33 +208,28 @@
 
             let html = '<div class="video-grid">';
             videos.forEach(video => {
-                const embedUrl = getEmbedUrl(video.platform, video.url);
-                if (!embedUrl) {
-                    // Fallback: tampilkan tautan langsung
-                    html += `
-                        <div class="video-card">
-                            <div class="video-title">${escapeHTML(video.judul)}</div>
-                            <div class="embed-container" style="background:#fff3e0; display:flex; align-items:center; justify-content:center;">
-                                <a href="${escapeHTML(video.url)}" target="_blank" class="fallback-link" rel="noopener noreferrer">
-                                    🔗 Buka Video di ${escapeHTML(video.platform)}
-                                </a>
-                            </div>
-                        </div>
-                    `;
-                    return;
-                }
-
+                // Langsung gunakan embedHtml (blockquote Instagram) yang sudah bersih
                 html += `
                     <div class="video-card">
                         <div class="video-title">${escapeHTML(video.judul)}</div>
                         <div class="embed-container">
-                            <iframe src="${escapeHTML(embedUrl)}" allowfullscreen loading="lazy"></iframe>
+                            ${video.embedHtml}
                         </div>
                     </div>
                 `;
             });
             html += '</div>';
             container.innerHTML = html;
+
+            // Panggil Instagram embed processor agar blockquote dirender
+            if (window.instgrm) {
+                window.instgrm.Embeds.process();
+            } else {
+                // Tunggu sebentar hingga script embed.js siap
+                setTimeout(() => {
+                    if (window.instgrm) window.instgrm.Embeds.process();
+                }, 2000);
+            }
         }
 
         // Fungsi sederhana untuk menghindari XSS
@@ -298,6 +243,7 @@
             });
         }
 
+        // Jalankan
         renderVideos();
     </script>
 </body>
