@@ -11,11 +11,10 @@
             margin: 0;
             padding: 0;
             color: #2c3e50;
-            overflow-y: auto; /* memastikan scroll vertikal */
+            overflow-y: auto;
         }
         .ramadan-ornament {
             position: relative;
-            /* overflow: hidden; dihapus agar tidak memotong */
         }
         .ramadan-ornament::before {
             content: "🌙 ⭐ 🌙 ⭐ 🌙";
@@ -81,7 +80,7 @@
             grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
             gap: 25px;
             margin-top: 30px;
-            margin-bottom: 40px; /* jarak dengan footer */
+            margin-bottom: 40px;
         }
         .video-card {
             background: white;
@@ -171,13 +170,12 @@
     </footer>
 
     <script>
-        // Fungsi memuat CSV dengan delimiter titik koma
+        // Fungsi memuat CSV
         async function loadCSV() {
             try {
                 const response = await fetch('video.csv');
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const csvText = await response.text();
-                console.log('CSV mentah:', csvText.substring(0, 200));
                 return parseCSV(csvText);
             } catch (error) {
                 console.error('Gagal memuat CSV:', error);
@@ -185,48 +183,59 @@
             }
         }
 
-        // Parser CSV dengan delimiter titik koma, membersihkan kutip dan spasi
+        // Parser CSV dengan delimiter koma, menangani kolom berisi petik
         function parseCSV(csv) {
             const lines = csv.split('\n').filter(line => line.trim() !== '');
             if (lines.length === 0) return [];
 
-            // Ambil header, pisahkan dengan titik koma
-            const headers = lines[0].split(';').map(h => h.trim().replace(/^"|"$/g, ''));
-            console.log('Header:', headers);
-
+            // Abaikan baris header (kolom: judul, platform, url)
             const result = [];
             for (let i = 1; i < lines.length; i++) {
                 const line = lines[i].trim();
-                if (line === '') continue;
+                if (!line) continue;
 
-                // Pisahkan dengan titik koma
-                let parts = line.split(';');
-                // Bersihkan setiap part: buang spasi dan kutip di awal/akhir
-                parts = parts.map(p => p.trim().replace(/^"|"$/g, ''));
+                // Cari koma pertama dan kedua
+                let firstComma = line.indexOf(',');
+                if (firstComma === -1) continue;
+                let secondComma = line.indexOf(',', firstComma + 1);
+                if (secondComma === -1) continue;
 
-                // Ambil tiga kolom pertama (judul, platform, url)
-                if (parts.length < 3) continue;
+                let judul = line.substring(0, firstComma).trim();
+                let platform = line.substring(firstComma + 1, secondComma).trim();
+                let sisa = line.substring(secondComma + 1).trim();
 
-                const judul = parts[0];
-                const platform = parts[1].toLowerCase();
-                const url = parts[2];
+                // Ekstrak URL yang mungkin diapit petik
+                let url = '';
+                if (sisa.startsWith('"')) {
+                    // Cari petik penutup
+                    let endQuote = sisa.indexOf('"', 1);
+                    if (endQuote !== -1) {
+                        url = sisa.substring(1, endQuote);
+                    } else {
+                        url = sisa; // fallback
+                    }
+                } else {
+                    // Jika tidak diapit petik, ambil sampai koma berikutnya
+                    let nextComma = sisa.indexOf(',');
+                    url = nextComma === -1 ? sisa : sisa.substring(0, nextComma);
+                }
+                url = url.trim();
 
-                // Lewati jika kosong
-                if (!judul || !platform || !url) continue;
-
-                result.push({ judul, platform, url });
+                if (judul && platform && url) {
+                    result.push({ judul, platform, url });
+                }
             }
-            console.log('Data video setelah parsing:', result);
+            console.log('Data video:', result);
             return result;
         }
 
-        // Konversi URL ke embed (Instagram / TikTok)
+        // Konversi URL ke embed Instagram / TikTok
         function getEmbedUrl(platform, url) {
-            // Normalisasi platform
-            if (platform.includes('insta')) { // menangani 'instagram' dan 'instagran'
-                // Ekstrak ID dari Instagram post/reel
-                const match = url.match(/(?:instagram\.com\/p\/|instagram\.com\/reel\/)([^/?]+)/);
+            platform = platform.toLowerCase();
+            if (platform.includes('insta')) { // menangani 'instagram' atau 'instagran'
+                const match = url.match(/(?:instagram\.com\/(?:p|reel)\/)([^/?]+)/);
                 if (match) {
+                    // Gunakan embed /p/ (bekerja untuk post dan reel)
                     return `https://www.instagram.com/p/${match[1]}/embed`;
                 }
             } else if (platform.includes('tiktok')) {
@@ -254,10 +263,10 @@
                     // Fallback: tampilkan tautan langsung
                     html += `
                         <div class="video-card">
-                            <div class="video-title">${video.judul}</div>
+                            <div class="video-title">${escapeHTML(video.judul)}</div>
                             <div class="embed-container" style="background:#fff3e0; display:flex; align-items:center; justify-content:center;">
-                                <a href="${video.url}" target="_blank" class="fallback-link" rel="noopener noreferrer">
-                                    🔗 Buka Video di ${video.platform}
+                                <a href="${escapeHTML(video.url)}" target="_blank" class="fallback-link" rel="noopener noreferrer">
+                                    🔗 Buka Video di ${escapeHTML(video.platform)}
                                 </a>
                             </div>
                         </div>
@@ -267,15 +276,26 @@
 
                 html += `
                     <div class="video-card">
-                        <div class="video-title">${video.judul}</div>
+                        <div class="video-title">${escapeHTML(video.judul)}</div>
                         <div class="embed-container">
-                            <iframe src="${embedUrl}" allowfullscreen loading="lazy"></iframe>
+                            <iframe src="${escapeHTML(embedUrl)}" allowfullscreen loading="lazy"></iframe>
                         </div>
                     </div>
                 `;
             });
             html += '</div>';
             container.innerHTML = html;
+        }
+
+        // Fungsi sederhana untuk menghindari XSS
+        function escapeHTML(str) {
+            return String(str).replace(/[&<>"]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                if (m === '"') return '&quot;';
+                return m;
+            });
         }
 
         renderVideos();
