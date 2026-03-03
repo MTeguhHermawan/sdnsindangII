@@ -4,18 +4,21 @@
     <meta charset="UTF-8">
     <title>Video Anak - Ramadan Ceria</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Papa Parse untuk membaca CSV -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- Instagram embed script (WAJIB ADA) -->
+    <script async src="//www.instagram.com/embed.js"></script>
     <style>
-        /* ===== Style sama seperti sebelumnya ===== */
         body {
             font-family: 'Arial', sans-serif;
             background: linear-gradient(145deg, #f9f3e6 0%, #f0e2c5 100%);
             margin: 0;
             padding: 0;
             color: #2c3e50;
+            overflow-y: auto;
         }
         .ramadan-ornament {
             position: relative;
-            overflow: hidden;
         }
         .ramadan-ornament::before {
             content: "🌙 ⭐ 🌙 ⭐ 🌙";
@@ -28,6 +31,7 @@
             white-space: nowrap;
             animation: float 10s linear infinite;
             pointer-events: none;
+            z-index: 0;
         }
         @keyframes float {
             from { transform: translateX(-100%); }
@@ -40,6 +44,8 @@
             text-align: center;
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             border-bottom: 5px solid #fdd835;
+            position: relative;
+            z-index: 1;
         }
         header h1 {
             margin: 0;
@@ -55,6 +61,8 @@
             max-width: 1300px;
             margin: 0 auto;
             padding: 20px;
+            position: relative;
+            z-index: 1;
         }
         .back-link {
             display: inline-block;
@@ -76,6 +84,7 @@
             grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
             gap: 25px;
             margin-top: 30px;
+            margin-bottom: 40px;
         }
         .video-card {
             background: white;
@@ -101,30 +110,14 @@
         }
         .embed-container {
             position: relative;
-            padding-bottom: 100%; /* 1:1 aspect ratio */
-            height: 0;
-            overflow: hidden;
-            background: #f0f0f0;
-        }
-        .embed-container iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
             width: 100%;
-            height: 100%;
-            border: none;
+            background: #f0f0f0;
+            overflow: hidden;
         }
-        .fallback-link {
-            display: block;
-            text-align: center;
-            padding: 20px;
-            background: #e8f5e8;
-            color: #2e7d32;
-            font-weight: bold;
-            text-decoration: none;
-        }
-        .fallback-link:hover {
-            text-decoration: underline;
+        .embed-container blockquote {
+            margin: 0;
+            width: 100% !important;
+            max-width: 100% !important;
         }
         .loading, .error {
             text-align: center;
@@ -142,8 +135,10 @@
             padding: 25px;
             background: #2e7d32;
             color: white;
-            margin-top: 40px;
             border-top: 5px solid #fdd835;
+            position: relative;
+            z-index: 1;
+            clear: both;
         }
     </style>
 </head>
@@ -163,73 +158,45 @@
     </footer>
 
     <script>
-        // Fungsi memuat CSV dengan delimiter titik koma
+        // Fungsi memuat dan memparse CSV dengan Papa Parse
         async function loadCSV() {
             try {
                 const response = await fetch('video.csv');
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const csvText = await response.text();
-                console.log('CSV mentah:', csvText.substring(0, 200)); // log sebagian
-                return parseCSV(csvText);
+                return new Promise((resolve) => {
+                    Papa.parse(csvText, {
+                        delimiter: ",",          // delimiter koma
+                        quoteChar: '"',           // karakter kutip
+                        header: false,            // tidak ada header otomatis
+                        skipEmptyLines: true,
+                        complete: (results) => {
+                            let data = results.data;
+                            // Buang baris header jika ada (baris pertama berisi "judul")
+                            if (data.length > 0 && data[0][0] === 'judul') {
+                                data = data.slice(1);
+                            }
+                            // Ambil kolom: judul, platform, embedHtml
+                            const videos = data.map(row => ({
+                                judul: row[0] ? row[0].trim() : '',
+                                platform: row[1] ? row[1].trim() : '',
+                                embedHtml: row[2] ? row[2].trim() : ''
+                            })).filter(v => v.judul && v.embedHtml);
+                            resolve(videos);
+                        },
+                        error: (err) => {
+                            console.error('Parse error:', err);
+                            resolve([]);
+                        }
+                    });
+                });
             } catch (error) {
                 console.error('Gagal memuat CSV:', error);
-                return null;
+                return [];
             }
         }
 
-        // Parser CSV dengan delimiter titik koma, membersihkan kutip dan spasi
-        function parseCSV(csv) {
-            const lines = csv.split('\n').filter(line => line.trim() !== '');
-            if (lines.length === 0) return [];
-
-            // Ambil header, pisahkan dengan titik koma
-            const headers = lines[0].split(';').map(h => h.trim().replace(/^"|"$/g, ''));
-            console.log('Header:', headers);
-
-            const result = [];
-            for (let i = 1; i < lines.length; i++) {
-                const line = lines[i].trim();
-                if (line === '') continue;
-
-                // Pisahkan dengan titik koma
-                let parts = line.split(';');
-                // Bersihkan setiap part: buang spasi dan kutip di awal/akhir
-                parts = parts.map(p => p.trim().replace(/^"|"$/g, ''));
-
-                // Ambil tiga kolom pertama (judul, platform, url)
-                if (parts.length < 3) continue;
-
-                const judul = parts[0];
-                const platform = parts[1].toLowerCase();
-                const url = parts[2];
-
-                // Lewati jika kosong
-                if (!judul || !platform || !url) continue;
-
-                result.push({ judul, platform, url });
-            }
-            console.log('Data video setelah parsing:', result);
-            return result;
-        }
-
-        // Konversi URL ke embed (Instagram / TikTok)
-        function getEmbedUrl(platform, url) {
-            // Normalisasi platform
-            if (platform.includes('insta')) { // menangani 'instagram' dan 'instagran'
-                // Ekstrak ID dari Instagram post/reel
-                const match = url.match(/(?:instagram\.com\/p\/|instagram\.com\/reel\/)([^/?]+)/);
-                if (match) {
-                    return `https://www.instagram.com/p/${match[1]}/embed`;
-                }
-            } else if (platform.includes('tiktok')) {
-                const match = url.match(/tiktok\.com\/@[^/]+\/video\/(\d+)/);
-                if (match) {
-                    return `https://www.tiktok.com/embed/v2/${match[1]}`;
-                }
-            }
-            return null;
-        }
-
+        // Render video ke halaman
         async function renderVideos() {
             const container = document.getElementById('video-container');
             const videos = await loadCSV();
@@ -241,35 +208,50 @@
 
             let html = '<div class="video-grid">';
             videos.forEach(video => {
-                const embedUrl = getEmbedUrl(video.platform, video.url);
-                if (!embedUrl) {
-                    // Fallback: tampilkan tautan langsung
-                    html += `
-                        <div class="video-card">
-                            <div class="video-title">${video.judul}</div>
-                            <div class="embed-container" style="background:#fff3e0; display:flex; align-items:center; justify-content:center;">
-                                <a href="${video.url}" target="_blank" class="fallback-link" rel="noopener noreferrer">
-                                    🔗 Buka Video di ${video.platform}
-                                </a>
-                            </div>
-                        </div>
-                    `;
-                    return;
-                }
-
+                // Langsung gunakan embedHtml (blockquote Instagram) yang sudah bersih
                 html += `
                     <div class="video-card">
-                        <div class="video-title">${video.judul}</div>
+                        <div class="video-title">${escapeHTML(video.judul)}</div>
                         <div class="embed-container">
-                            <iframe src="${embedUrl}" allowfullscreen loading="lazy"></iframe>
+                            ${video.embedHtml}
                         </div>
                     </div>
                 `;
             });
             html += '</div>';
             container.innerHTML = html;
+
+            // Panggil Instagram embed processor agar blockquote dirender
+            if (window.instgrm) {
+                window.instgrm.Embeds.process();
+            } else {
+                // Tunggu script embed.js selesai dimuat
+                let attempts = 0;
+                const interval = setInterval(() => {
+                    if (window.instgrm) {
+                        clearInterval(interval);
+                        window.instgrm.Embeds.process();
+                    } else if (attempts > 20) { // timeout 10 detik
+                        clearInterval(interval);
+                        console.warn('Instagram embed script tidak dimuat');
+                    }
+                    attempts++;
+                }, 500);
+            }
         }
 
+        // Fungsi sederhana untuk menghindari XSS
+        function escapeHTML(str) {
+            return String(str).replace(/[&<>"]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                if (m === '"') return '&quot;';
+                return m;
+            });
+        }
+
+        // Jalankan
         renderVideos();
     </script>
 </body>
