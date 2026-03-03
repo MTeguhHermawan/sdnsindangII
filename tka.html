@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>TKA - Kelas VI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    /* Gaya sama dengan halaman utama (salin dari index.html) */
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background-color: #f4f6f8;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background-color: #1e88e5;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 26px;
+    }
+
+    header p {
+      margin-top: 8px;
+      font-size: 16px;
+    }
+
+    .container {
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+    }
+
+    .card {
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      margin-top: 0;
+      color: #1e88e5;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    select, input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+
+    button {
+      background-color: #1e88e5;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 20px;
+      width: 100%;
+    }
+
+    button:hover {
+      background-color: #1565c0;
+    }
+
+    .status {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 5px;
+      display: none;
+    }
+
+    .status.success {
+      background-color: #c8e6c9;
+      color: #2e7d32;
+      display: block;
+    }
+
+    .status.error {
+      background-color: #ffcdd2;
+      color: #c62828;
+      display: block;
+    }
+
+    .tautan-container {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+
+    .tautan {
+      flex: 1;
+      min-width: 200px;
+      background-color: #e0e0e0;
+      padding: 20px;
+      text-align: center;
+      border-radius: 10px;
+      text-decoration: none;
+      color: #9e9e9e;
+      font-weight: bold;
+      pointer-events: none;
+      transition: 0.3s;
+    }
+
+    .tautan.aktif {
+      background-color: #1e88e5;
+      color: white;
+      pointer-events: auto;
+    }
+
+    .tautan.aktif:hover {
+      background-color: #1565c0;
+    }
+
+    footer {
+      text-align: center;
+      padding: 15px;
+      font-size: 14px;
+      color: #777;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>TKA (Tes Kemampuan Akademik)</h1>
+  <p>Kelas VI SDN Sindang II</p>
+</header>
+
+<div class="container">
+  <div class="card">
+    <h2>Akses Materi TKA</h2>
+    <p>Pilih nama dan masukkan kode yang diberikan oleh guru.</p>
+
+    <label for="nama">Nama Siswa</label>
+    <select id="nama">
+      <option value="">-- Pilih Nama --</option>
+    </select>
+
+    <label for="kode">Kode Akses</label>
+    <input type="text" id="kode" placeholder="Masukkan kode">
+
+    <button id="verifikasi">Verifikasi Kode</button>
+
+    <div id="status" class="status"></div>
+
+    <div class="tautan-container">
+      <a href="#" id="link-pusmendik" class="tautan" target="_blank">📘 Simulasi TKA Pusmendik</a>
+      <a href="#" id="link-drilling" class="tautan" target="_blank">📝 Drilling Soal Sekolah</a>
+    </div>
+  </div>
+</div>
+
+<footer>
+  © 2026 SDN Sindang II – Kelas VI
+</footer>
+
+<script>
+  // ===== KONFIGURASI =====
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz44nsgcVtYiFTFDmOE_Nq2irTL_Os8cKZLaYp8jJ7883IGHqUjr_LD5GgKkjaXSiU-/exec'; // GANTI DENGAN URL APPS SCRIPT ANDA
+  const CSV_FILE = 'siswa.csv';
+
+  // ===== STATE =====
+  let dataSiswa = [];
+  let siswaTerpilih = null;
+
+  // ===== INISIALISASI =====
+  document.addEventListener('DOMContentLoaded', async () => {
+    await loadSiswaFromCSV();
+    populateDropdown();
+
+    // Cek sessionStorage
+    const savedNama = sessionStorage.getItem('tka_nama');
+    if (savedNama) {
+      const siswa = dataSiswa.find(s => s.nama === savedNama);
+      if (siswa) {
+        siswaTerpilih = siswa.nama;
+        document.getElementById('nama').value = siswa.nama;
+        aktifkanTautan();
+        tampilStatus('Selamat datang kembali, ' + siswa.nama + '!', 'success');
+      } else {
+        sessionStorage.removeItem('tka_nama');
+      }
+    }
+
+    document.getElementById('nama').addEventListener('change', resetStatus);
+    document.getElementById('kode').addEventListener('input', resetStatus);
+  });
+
+  // ===== MEMBACA CSV DENGAN DELIMITER ; =====
+  async function loadSiswaFromCSV() {
+    try {
+      const response = await fetch(CSV_FILE);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status} - ${response.statusText}`);
+      }
+      const csvText = await response.text();
+      const lines = csvText.trim().split('\n');
+      
+      // Baris pertama adalah header: "Nama;Kode" (mungkin ada spasi)
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (line === '') continue;
+        
+        // Pisahkan dengan titik koma
+        const parts = line.split(';');
+        if (parts.length < 2) continue; // baris tidak valid
+        
+        const nama = parts[0].trim();
+        const kode = parts[1].trim();
+        
+        if (nama && kode) {
+          dataSiswa.push({ nama, kode });
+        }
+      }
+      
+      // Jika tidak ada data, tampilkan error
+      if (dataSiswa.length === 0) {
+        throw new Error('Tidak ada data siswa ditemukan di CSV');
+      }
+    } catch (error) {
+      console.error('Gagal memuat CSV:', error);
+      tampilStatus('Gagal memuat data siswa. Pastikan file siswa.csv tersedia dan formatnya benar.', 'error');
+    }
+  }
+
+  function populateDropdown() {
+    const select = document.getElementById('nama');
+    // Kosongkan option selain yang pertama
+    select.innerHTML = '<option value="">-- Pilih Nama --</option>';
+    
+    dataSiswa.forEach(siswa => {
+      const option = document.createElement('option');
+      option.value = siswa.nama;
+      option.textContent = siswa.nama;
+      select.appendChild(option);
+    });
+  }
+
+  // ===== VERIFIKASI KODE =====
+  document.getElementById('verifikasi').addEventListener('click', async () => {
+    const nama = document.getElementById('nama').value;
+    const kodeInput = document.getElementById('kode').value.trim();
+
+    if (!nama) {
+      tampilStatus('Pilih nama terlebih dahulu.', 'error');
+      return;
+    }
+    if (!kodeInput) {
+      tampilStatus('Masukkan kode akses.', 'error');
+      return;
+    }
+
+    const siswa = dataSiswa.find(s => s.nama === nama);
+    if (!siswa) {
+      tampilStatus('Data siswa tidak ditemukan.', 'error');
+      return;
+    }
+
+    if (siswa.kode === kodeInput) {
+      siswaTerpilih = siswa.nama;
+      sessionStorage.setItem('tka_nama', siswa.nama);
+      aktifkanTautan();
+      tampilStatus('Kode benar! Silakan akses tautan di bawah.', 'success');
+      logActivity(siswa.nama, 'Login sukses');
+    } else {
+      tampilStatus('Kode salah. Coba lagi.', 'error');
+      logActivity(nama, 'Login gagal (kode salah)');
+    }
+  });
+
+  // ===== AKTIFKAN TAUTAN =====
+  function aktifkanTautan() {
+    const linkPusmendik = document.getElementById('link-pusmendik');
+    const linkDrilling = document.getElementById('link-drilling');
+
+    linkPusmendik.href = 'https://pusmendik.kemdikbud.go.id/tka/simulasi_tka';
+    linkDrilling.href = 'https://forms.gle/arW8kAHABr5wihdT9';
+
+    linkPusmendik.classList.add('aktif');
+    linkDrilling.classList.add('aktif');
+
+    // Hapus event listener lama (agar tidak dobel) lalu tambah yang baru
+    linkPusmendik.replaceWith(linkPusmendik.cloneNode(true));
+    linkDrilling.replaceWith(linkDrilling.cloneNode(true));
+    
+    // Dapatkan elemen baru setelah clone
+    const newLinkPusmendik = document.getElementById('link-pusmendik');
+    const newLinkDrilling = document.getElementById('link-drilling');
+    
+    newLinkPusmendik.addEventListener('click', () => {
+      logActivity(siswaTerpilih, 'Klik Simulasi Pusmendik');
+    });
+    newLinkDrilling.addEventListener('click', () => {
+      logActivity(siswaTerpilih, 'Klik Drilling Sekolah');
+    });
+  }
+
+  // ===== RESET STATUS =====
+  function resetStatus() {
+    const linkPusmendik = document.getElementById('link-pusmendik');
+    const linkDrilling = document.getElementById('link-drilling');
+    linkPusmendik.href = '#';
+    linkDrilling.href = '#';
+    linkPusmendik.classList.remove('aktif');
+    linkDrilling.classList.remove('aktif');
+
+    sessionStorage.removeItem('tka_nama');
+    siswaTerpilih = null;
+    document.getElementById('status').style.display = 'none';
+  }
+
+  function tampilStatus(pesan, tipe) {
+    const statusDiv = document.getElementById('status');
+    statusDiv.textContent = pesan;
+    statusDiv.className = 'status ' + tipe;
+  }
+
+  // ===== LOG KE GOOGLE SHEETS =====
+  async function logActivity(nama, aksi) {
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbz44nsgcVtYiFTFDmOE_Nq2irTL_Os8cKZLaYp8jJ7883IGHqUjr_LD5GgKkjaXSiU-/exec') {
+      console.log('LOG:', { nama, aksi });
+      return;
+    }
+
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nama, aksi })
+      });
+    } catch (error) {
+      console.error('Gagal mengirim log:', error);
+    }
+  }
+</script>
+
+</body>
+</html>
