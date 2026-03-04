@@ -206,54 +206,54 @@
   });
 
   // ===== MEMBACA CSV DENGAN DELIMITER ; =====
-  async function loadSiswaFromCSV() {
-    try {
-      const response = await fetch(CSV_FILE);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status} - ${response.statusText}`);
-      }
-      const csvText = await response.text();
-      const lines = csvText.trim().split('\n');
-      
-      // Baris pertama adalah header: "Nama;Kode" (mungkin ada spasi)
-      for (let i = 1; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (line === '') continue;
-        
-        // Pisahkan dengan titik koma
-        const parts = line.split(';');
-        if (parts.length < 2) continue; // baris tidak valid
-        
-        const nama = parts[0].trim();
-        const kode = parts[1].trim();
-        
-        if (nama && kode) {
-          dataSiswa.push({ nama, kode });
-        }
-      }
-      
-      // Jika tidak ada data, tampilkan error
-      if (dataSiswa.length === 0) {
-        throw new Error('Tidak ada data siswa ditemukan di CSV');
-      }
-    } catch (error) {
-      console.error('Gagal memuat CSV:', error);
-      tampilStatus('Gagal memuat data siswa. Pastikan file siswa.csv tersedia dan formatnya benar.', 'error');
+ async function loadSiswaFromCSV() {
+  try {
+    const response = await fetch(CSV_FILE);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status} - ${response.statusText}`);
     }
-  }
+    const csvText = await response.text();
+    const lines = csvText.trim().split('\n');
+    if (lines.length < 2) {
+      throw new Error('File CSV kosong atau hanya berisi header');
+    }
 
-  function populateDropdown() {
-    const select = document.getElementById('nama');
-    // Kosongkan option selain yang pertama
-    select.innerHTML = '<option value="">-- Pilih Nama --</option>';
-    
-    dataSiswa.forEach(siswa => {
-      const option = document.createElement('option');
-      option.value = siswa.nama;
-      option.textContent = siswa.nama;
-      select.appendChild(option);
-    });
+    // Tentukan delimiter dari baris pertama (header)
+    const header = lines[0];
+    let delimiter = ';';
+    if (header.includes(';')) {
+      delimiter = ';';
+    } else if (header.includes(',')) {
+      delimiter = ',';
+    } else {
+      // Jika tidak ditemukan koma atau titik koma, fallback ke ';'
+      delimiter = ';';
+    }
+
+    // Proses baris data mulai dari indeks 1
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line === '') continue;
+
+      const parts = line.split(delimiter);
+      if (parts.length < 2) continue; // baris tidak valid
+
+      const nama = parts[0].trim();
+      const kode = parts[1].trim();
+
+      if (nama && kode) {
+        dataSiswa.push({ nama, kode });
+      }
+    }
+
+    if (dataSiswa.length === 0) {
+      throw new Error('Tidak ada data siswa ditemukan di CSV');
+    }
+  } catch (error) {
+    console.error('Gagal memuat CSV:', error);
+    tampilStatus('Gagal memuat data siswa. Pastikan file siswa.csv tersedia dan formatnya benar.', 'error');
   }
+}
 
   // ===== VERIFIKASI KODE =====
   document.getElementById('verifikasi').addEventListener('click', async () => {
